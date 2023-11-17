@@ -59,6 +59,9 @@ public class TPSController : MonoBehaviour
         _camera = Camera.main.transform;
 
         _animator = GetComponentInChildren<Animator>();
+
+        Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked;
     }
 
     // Update is called once per frame
