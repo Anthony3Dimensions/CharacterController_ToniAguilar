@@ -30,6 +30,8 @@ public class TPSController : MonoBehaviour
 
     private Vector3 _playerGravity;
 
+    private bool _isAiming = false;
+
 
     [SerializeField] private Transform _sensorPosition;
 
@@ -37,7 +39,18 @@ public class TPSController : MonoBehaviour
 
     [SerializeField] private LayerMask _groundLayer;
 
+    [SerializeField] private float _pushForce = 5;
+
+    [SerializeField] private float _throwForce = 10;
+
     private bool _isGrounded;
+
+    //Variables para coger cosas
+    public GameObject objectToGrab;
+
+    private GameObject grabedObject;
+
+    [SerializeField] private Transform _interactionZone;
     // Start is called before the first frame update
     void Awake()
     {
@@ -57,11 +70,18 @@ public class TPSController : MonoBehaviour
        if(Input.GetButton("Fire2"))
        {
             AimMovement();
+            _isAiming = true;
        }
 
        else
        {
             Movement();
+            _isAiming = false;
+       }
+
+       if(Input.GetButtonDown("Fire1") && grabedObject != null && _isAiming)
+       {
+            ThrowObject();
        }
 
        Jump();
@@ -69,6 +89,11 @@ public class TPSController : MonoBehaviour
        if(Input.GetKeyDown(KeyCode.K)) 
        {
             RayTest();
+       }
+
+       if(Input.GetKeyDown(KeyCode.E))
+       {
+            GrabObject();
        }
        
     }
@@ -171,7 +196,55 @@ public class TPSController : MonoBehaviour
             }
             
         }
-        
-       
+         
     }
+
+    void OnControllerColliderHit(ControllerColliderHit hit)
+    {
+        Rigidbody body = hit.collider.attachedRigidbody;
+
+        if(body == null || body.isKinematic)
+        {
+            return;
+        }
+
+        if(hit.moveDirection.y < -0.2f)
+        {
+            return;
+        }
+
+        Vector3 pushDirection = new Vector3(hit.moveDirection.x, 0, hit.moveDirection.z);
+
+        body.velocity = pushDirection * _pushForce / body.mass;
+    }
+
+    void GrabObject()
+    {
+        if(objectToGrab != null && grabedObject == null)
+        {
+            grabedObject = objectToGrab;
+            grabedObject.transform.SetParent(_interactionZone); 
+            grabedObject.transform.position = _interactionZone.position;
+            grabedObject.GetComponent<Rigidbody>().isKinematic = true;
+        }
+
+        else if(grabedObject != null)
+        {
+            grabedObject.GetComponent<Rigidbody>().isKinematic = false;
+            grabedObject.transform.SetParent(null);
+            grabedObject = null;
+        }
+    }
+
+    void ThrowObject()
+    {
+        Rigidbody grabedBody = grabedObject.GetComponent<Rigidbody>();
+
+        grabedBody.isKinematic = false;
+        grabedObject.transform.SetParent(null);
+        grabedBody.AddForce(_camera.transform.forward * _throwForce, ForceMode.Impulse);
+        grabedObject = null;
+    }
+
+
 }
